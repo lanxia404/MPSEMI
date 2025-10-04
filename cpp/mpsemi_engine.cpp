@@ -4,10 +4,11 @@
 #include <fcitx/candidatelist.h>
 #include <fcitx/text.h>
 #include <fcitx/instance.h>
+#include <cstring>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
-#include <cstring>
 
 // ---- Rust C-ABI ----
 extern "C"
@@ -27,6 +28,27 @@ extern "C"
     char *mpsemi_commit(void *eng);
     void mpsemi_free_cstr(char *s);
 }
+
+class MPSEMICandidateWord final : public fcitx::CandidateWord
+{
+public:
+    MPSEMICandidateWord(fcitx::Text text,
+                        std::function<void(fcitx::InputContext *)> cb)
+        : fcitx::CandidateWord(std::move(text)), callback_(std::move(cb))
+    {
+    }
+
+    void select(fcitx::InputContext *inputContext) const override
+    {
+        if (callback_)
+        {
+            callback_(inputContext);
+        }
+    }
+
+private:
+    std::function<void(fcitx::InputContext *)> callback_;
+};
 
 class MPSEMIEngine final : public fcitx::InputMethodEngine
 {
@@ -78,9 +100,9 @@ public:
             {
                 std::string txt(c);
                 mpsemi_free_cstr(c);
-                list->append<fcitx::CandidateWord>(
+                list->append<MPSEMICandidateWord>(
                     fcitx::Text(txt),
-                    [this](const fcitx::InputMethodEntry &, fcitx::InputContext *ctx)
+                    [this](fcitx::InputContext *ctx)
                     {
                         if (char *s = mpsemi_commit(core_))
                         {
