@@ -1,0 +1,40 @@
+# Rust build artifacts
+/target
+**/target/
+
+# Cargo
+Cargo.lock
+
+# CMake build directories
+/build/
+**/build/
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+
+# Compiled objects
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.so
+*.dylib
+*.dll
+
+# Generated files
+*.rlib
+*.rmeta
+*.pch
+*.pdb
+*.lib
+
+# IDE / tooling
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo
+
+# Logs
+*.log
