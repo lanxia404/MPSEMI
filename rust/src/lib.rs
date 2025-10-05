@@ -32,13 +32,13 @@ impl Engine {
     }
     fn preedit(&self) -> String {
         if self.buf.is_empty() {
-            "".into()
+            String::new()
         } else {
-            format!("{}", self.buf)
+            self.buf.clone()
         }
     }
     fn commit(&mut self) -> String {
-        let out = self.cands.get(0).cloned().unwrap_or_default();
+        let out = self.cands.first().cloned().unwrap_or_default();
         self.buf.clear();
         self.cands.clear();
         out
@@ -47,12 +47,16 @@ impl Engine {
 
 // ---- C ABI ----
 #[unsafe(no_mangle)]
-pub extern "C" fn mpsemi_engine_new() -> *mut c_void {
+/// # Safety
+/// Caller must free the returned pointer with `mpsemi_engine_free`.
+pub unsafe extern "C" fn mpsemi_engine_new() -> *mut c_void {
     Box::into_raw(Box::new(Engine::new())) as *mut c_void
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn mpsemi_engine_free(ptr: *mut c_void) {
+/// # Safety
+/// `ptr` must be null or a pointer previously created by `mpsemi_engine_new`.
+pub unsafe extern "C" fn mpsemi_engine_free(ptr: *mut c_void) {
     if !ptr.is_null() {
         unsafe {
             drop(Box::from_raw(ptr as *mut Engine));
@@ -61,7 +65,9 @@ pub extern "C" fn mpsemi_engine_free(ptr: *mut c_void) {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn mpsemi_process_utf8(ptr: *mut c_void, s: *const c_char) -> bool {
+/// # Safety
+/// `ptr` must be valid and `s` must point to a null-terminated UTF-8 string.
+pub unsafe extern "C" fn mpsemi_process_utf8(ptr: *mut c_void, s: *const c_char) -> bool {
     if ptr.is_null() || s.is_null() {
         return false;
     }
@@ -71,7 +77,9 @@ pub extern "C" fn mpsemi_process_utf8(ptr: *mut c_void, s: *const c_char) -> boo
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn mpsemi_preedit(ptr: *mut c_void) -> *mut c_char {
+/// # Safety
+/// `ptr` must point to an engine created by `mpsemi_engine_new`.
+pub unsafe extern "C" fn mpsemi_preedit(ptr: *mut c_void) -> *mut c_char {
     if ptr.is_null() {
         return ptr::null_mut();
     }
@@ -80,7 +88,9 @@ pub extern "C" fn mpsemi_preedit(ptr: *mut c_void) -> *mut c_char {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn mpsemi_candidate_count(ptr: *mut c_void) -> u32 {
+/// # Safety
+/// `ptr` must point to an engine created by `mpsemi_engine_new`.
+pub unsafe extern "C" fn mpsemi_candidate_count(ptr: *mut c_void) -> u32 {
     if ptr.is_null() {
         return 0;
     }
@@ -89,7 +99,9 @@ pub extern "C" fn mpsemi_candidate_count(ptr: *mut c_void) -> u32 {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn mpsemi_candidate_at(ptr: *mut c_void, idx: u32) -> *mut c_char {
+/// # Safety
+/// `ptr` must point to an engine created by `mpsemi_engine_new`.
+pub unsafe extern "C" fn mpsemi_candidate_at(ptr: *mut c_void, idx: u32) -> *mut c_char {
     if ptr.is_null() {
         return ptr::null_mut();
     }
@@ -101,7 +113,9 @@ pub extern "C" fn mpsemi_candidate_at(ptr: *mut c_void, idx: u32) -> *mut c_char
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn mpsemi_commit(ptr: *mut c_void) -> *mut c_char {
+/// # Safety
+/// `ptr` must point to an engine created by `mpsemi_engine_new`.
+pub unsafe extern "C" fn mpsemi_commit(ptr: *mut c_void) -> *mut c_char {
     if ptr.is_null() {
         return ptr::null_mut();
     }
@@ -110,7 +124,9 @@ pub extern "C" fn mpsemi_commit(ptr: *mut c_void) -> *mut c_char {
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn mpsemi_free_cstr(s: *mut c_char) {
+/// # Safety
+/// `s` must be a pointer obtained from this library and not yet freed.
+pub unsafe extern "C" fn mpsemi_free_cstr(s: *mut c_char) {
     if s.is_null() {
         return;
     }
