@@ -67,36 +67,18 @@ public:
         // 將可見字元與空白/Enter轉給 Rust；其他鍵放行
         std::string text;
         auto sym = key.key().sym();
-        switch (sym)
-        {
-        case FcitxKey_BackSpace:
-            text = "\b";
-            break;
-        case FcitxKey_Escape:
-            text = "\x1b";
-            break;
-        case FcitxKey_Left:
-        case FcitxKey_Right:
-        case FcitxKey_Up:
-        case FcitxKey_Down:
-            return; // 交給Fcitx預設候選選單或游標移動
-        case FcitxKey_space:
+        if (sym == FcitxKey_space)
             text = " ";
-            break;
-        case FcitxKey_Return:
+        else if (sym == FcitxKey_Return)
             text = "\n";
-            break;
-        default:
-            if (key.key().isSimple())
-                text = key.key().toString();
-            else 
-                return;
+        else if (key.key().isSimple())
+            text = key.key().toString();
+        else
+        {
+            return;
         }
 
         bool consumed = mpsemi_process_utf8(core_, text.c_str());
-        if (!consumed)
-        // Rust 回傳 false 表示不消耗事件，直接放行
-            return;
 
         // 更新 preedit
         if (auto p = mpsemi_preedit(core_))
